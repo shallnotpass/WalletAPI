@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./BalanceAPI/Dockerfile
+    ports:
+      - 500:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  db:
+    image: postgres:latest
+    shm_size: 128mb
+    container_name: walletdb
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=md5
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=BalanceDb
+    restart: always
+    ports:
+        - "5432:5432"
+    volumes:
+      - .\volumes:/data/db
