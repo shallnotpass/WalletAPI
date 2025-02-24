@@ -8,7 +8,7 @@ namespace Application
     {
         public Task<User?> CreateWallet(UserRegistrationRequest userData);
         public Task<User?> GetBalance(string userId);
-        public Task<User?> Withdraw(string userId, decimal withdrawal);
-        public Task<User?> Deposit(string userId, decimal deposit);
+        public Task<TransactionResult> Withdraw(string userId, decimal withdrawal);
+        public Task<TransactionResult> Deposit(string userId, decimal deposit);
     }
 }

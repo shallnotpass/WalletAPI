@@ -1,6 +1,8 @@
 ﻿using Application;
 using Application.Models;
+using Domain.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace BalanceAPI.Controllers
 {
@@ -25,7 +27,12 @@ namespace BalanceAPI.Controllers
                 return BadRequest("Email field is empty");
             }
 
-            return Ok(new { user.Id, user.Email, user.Balance });
+            return Ok(
+                new { 
+                    userId = user.Id,
+                    email = user.Email,
+                    balance = user.Balance 
+                });
         }
 
         [HttpGet]
@@ -36,38 +43,45 @@ namespace BalanceAPI.Controllers
 
             if (user == null)
             {
-                return BadRequest("Email field is empty");
+                return NotFound("The user id does not exsists");//BadRequest("Email field is empty");
             }
 
-            return Ok(new { user.Id, user.Email, user.Balance });
+            return Ok(new { userId = user.Id, balance = user.Balance });
         }
 
         [HttpPost]
         [Route("{id}/deposit")]
         public async Task<IActionResult> Deposit(Guid id, DepositRequest depositData)
         {
-            var user = await _walletService.Deposit(id.ToString(), depositData.Amount);
+            var transactionResult = await _walletService.Deposit(id.ToString(), depositData.Amount);
 
-            if (user == null)
+            if(!transactionResult.IsSuccessful)
             {
-                return BadRequest("Email field is empty");
+                return NotFound(transactionResult?.error?.ErrorMessage);
             }
 
-            return Ok(new { user.Id, user.Email, user.Balance });
+            return Ok(new { userId = transactionResult?.user?.Id, newBalance = transactionResult?.user?.Balance });
         }
 
         [HttpPost]
         [Route("{id}/withdraw")]
         public async Task<IActionResult> Withdraw(Guid id, WithdrawalRequest withdrawalData)
         {
-            var user = await _walletService.Withdraw(id.ToString(), withdrawalData.Amount);
+            var transactionResult = await _walletService.Withdraw(id.ToString(), withdrawalData.Amount);
 
-            if (user == null)
+            if (!transactionResult.IsSuccessful)
             {
-                return BadRequest("Email field is empty");
+                switch(transactionResult.error.type)
+                {
+                    case Domain.Errors.ErrorType.NotFound:
+                        return NotFound(transactionResult?.error?.ErrorMessage);
+
+                    case Domain.Errors.ErrorType.TransactionResult:
+                        return Conflict(transactionResult?.error?.ErrorMessage);
+                }
             }
 
-            return Ok(new { user.Id, user.Email,  user.Balance });
+            return Ok(new { userId = transactionResult?.user?.Id, newBalance = transactionResult?.user?.Balance });
         }
     }
 }

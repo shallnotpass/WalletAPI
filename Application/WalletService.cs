@@ -2,7 +2,7 @@
 using DataAccess;
 using DataAccess.Repositories;
 using Domain.Models;
-
+using Domain.Errors;
 namespace Application
 {
     public class WalletService : IWalletService
@@ -17,15 +17,24 @@ namespace Application
             return await _userRepository.AddUser(userData.Email);
         }
 
-        public async Task<User?> Deposit(string userId, decimal deposit)
+        public async Task<TransactionResult> Deposit(string userId, decimal deposit)
         {
             var user = await _userRepository.FindUser(userId);
 
             if (user == null)
-                return null;
+                return new TransactionResult
+                {
+                    user = null,
+                    error = new Error("The user was not found")
+                };
 
             user.Deposit(deposit);
-            return await _userRepository.UpdateUser(user);
+
+            return new TransactionResult
+            {
+                user = await _userRepository.UpdateUser(user),
+                IsSuccessful = true
+            };
         }
 
         public Task<User?> GetBalance(string userId)
@@ -33,17 +42,29 @@ namespace Application
             return _userRepository.FindUser(userId);
         }
 
-        public async Task<User?> Withdraw(string userId, decimal withdrawal)
+        public async Task<TransactionResult> Withdraw(string userId, decimal withdrawal)
         {
             var user = await _userRepository.FindUser(userId);
 
             if (user == null)
-                return null;
+                return new TransactionResult 
+                { 
+                    user = null, 
+                    error = new Error("The user was not found") 
+                };
 
             if (user.Withdraw(withdrawal))
-                return await _userRepository.UpdateUser(user);
+                return new TransactionResult
+                {
+                    user = await _userRepository.UpdateUser(user),
+                    IsSuccessful = true
+                };
             else
-                return null;
+                return new TransactionResult 
+                { 
+                    user = user, 
+                    error = new Error("Insufficient funds") 
+                };
         }
     }
 }
