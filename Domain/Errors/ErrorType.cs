@@ -4,5 +4,5 @@ public enum ErrorType
 {
     NotFound = 0,
     Validation = 1,
-    TransactionResult = 2
+    TransactionError = 2
 }

@@ -25,7 +25,7 @@ namespace Application
                 return new TransactionResult
                 {
                     user = null,
-                    error = new Error("The user was not found")
+                    error = new Error(ErrorType.NotFound, "The user was not found")
                 };
 
             user.Deposit(deposit);
@@ -50,7 +50,7 @@ namespace Application
                 return new TransactionResult 
                 { 
                     user = null, 
-                    error = new Error("The user was not found") 
+                    error = new Error(ErrorType.NotFound, "The user was not found") 
                 };
 
             if (user.Withdraw(withdrawal))
@@ -63,7 +63,7 @@ namespace Application
                 return new TransactionResult 
                 { 
                     user = user, 
-                    error = new Error("Insufficient funds") 
+                    error = new Error(ErrorType.TransactionError, "Insufficient funds"),
                 };
         }
     }

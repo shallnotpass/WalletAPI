@@ -1,6 +1,7 @@
 ﻿using Application;
 using Application.Models;
 using Domain.Models;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 
@@ -11,16 +12,23 @@ namespace BalanceAPI.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IWalletService _walletService;
-        public UsersController(IWalletService walletService) 
+        private readonly IValidator<UserRegistrationRequest> _registrationValidator;
+        public UsersController(IWalletService walletService, IValidator<UserRegistrationRequest> validator) 
         {
             _walletService = walletService;
+            _registrationValidator = validator;
         }
 
         [HttpPost]
-        public async Task<IActionResult> Register(UserRegistrationRequest model)
+        public async Task<IActionResult> Register(UserRegistrationRequest request)
         {
-            //var validationResult = _registrationValidator.Validate(model);
-            var user = await _walletService.CreateWallet(model);
+            var validationResult = _registrationValidator.Validate(request);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
+
+            var user = await _walletService.CreateWallet(request);
 
             if (user == null)
             {
@@ -43,7 +51,7 @@ namespace BalanceAPI.Controllers
 
             if (user == null)
             {
-                return NotFound("The user id does not exsists");//BadRequest("Email field is empty");
+                return NotFound("The user id does not exsists");
             }
 
             return Ok(new { userId = user.Id, balance = user.Balance });
@@ -51,9 +59,14 @@ namespace BalanceAPI.Controllers
 
         [HttpPost]
         [Route("{id}/deposit")]
-        public async Task<IActionResult> Deposit(Guid id, DepositRequest depositData)
+        public async Task<IActionResult> Deposit(Guid id, DepositRequest request)
         {
-            var transactionResult = await _walletService.Deposit(id.ToString(), depositData.Amount);
+            if (request.Amount<0)
+            {
+                return BadRequest("Incorrect amount for a transaction");
+            }
+
+            var transactionResult = await _walletService.Deposit(id.ToString(), request.Amount);
 
             if(!transactionResult.IsSuccessful)
             {
@@ -65,9 +78,14 @@ namespace BalanceAPI.Controllers
 
         [HttpPost]
         [Route("{id}/withdraw")]
-        public async Task<IActionResult> Withdraw(Guid id, WithdrawalRequest withdrawalData)
+        public async Task<IActionResult> Withdraw(Guid id, WithdrawalRequest request)
         {
-            var transactionResult = await _walletService.Withdraw(id.ToString(), withdrawalData.Amount);
+            if (request.Amount < 0)
+            {
+                return BadRequest("Incorrect amount for a transaction");
+            }
+
+            var transactionResult = await _walletService.Withdraw(id.ToString(), request.Amount);
 
             if (!transactionResult.IsSuccessful)
             {
@@ -76,7 +94,7 @@ namespace BalanceAPI.Controllers
                     case Domain.Errors.ErrorType.NotFound:
                         return NotFound(transactionResult?.error?.ErrorMessage);
 
-                    case Domain.Errors.ErrorType.TransactionResult:
+                    case Domain.Errors.ErrorType.TransactionError:
                         return Conflict(transactionResult?.error?.ErrorMessage);
                 }
             }

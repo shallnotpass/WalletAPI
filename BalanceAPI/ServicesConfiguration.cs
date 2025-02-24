@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 using Application;
 using DataAccess.Repositories;
+using FluentValidation;
+using BalanceAPI.Validators;
+using Application.Models;
 
 namespace BalanceAPI
 {
@@ -16,6 +19,8 @@ namespace BalanceAPI
             services.AddTransient<IWalletService, WalletService>();
             var connectionString = configuration.GetConnectionString("PsqlConnection");
             services.AddDbContext<DbAccess>(options => options.UseNpgsql(connectionString));
+
+            services.AddTransient<IValidator<UserRegistrationRequest>, UserRegistrationValidator>();
         }
     }
 }

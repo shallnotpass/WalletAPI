@@ -2,9 +2,10 @@
 {
     public record class Error
     {
-        public Error(string message)
+        public Error(ErrorType type, string message)
         {
-            ErrorMessage = message;
+            this.ErrorMessage = message;
+            this.type = type;
         }
         public string? ErrorMessage { get; set; }
         public ErrorType type { get; set; }
